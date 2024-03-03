@@ -23,7 +23,7 @@ export const runAgent = async ({
     streaming: true,
     modelName: 'gpt-3.5-turbo',
     temperature: 0.4,
-    maxTokens: 1000,
+    maxTokens: 500,
     openAIApiKey: process.env.OPENAI_API_KEY,
   });
 
@@ -61,7 +61,11 @@ export const runAgentsInParallel = async () => {
   });
 
   await traceAsGroup(
-    { name: 'Trace Group', client },
+    {
+      name: 'Trace Group',
+      client,
+      projectName: process.env.LANGSMITH_PROJECT_NAME,
+    },
     async (callbackManager) =>
       await Promise.all(
         [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) =>
