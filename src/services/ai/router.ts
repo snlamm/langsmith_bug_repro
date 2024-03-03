@@ -1,5 +1,5 @@
 import express from 'express';
-import { runAllPrompts } from './runAgent.js';
+import { runAllPrompts } from './runPrompts.js';
 
 /**
  * Router for /ai
