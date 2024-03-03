@@ -1,45 +1,40 @@
 import { DynamicStructuredTool } from '@langchain/core/tools';
 import { z } from 'zod';
-import {
-  ChatPromptTemplate,
-  HumanMessagePromptTemplate,
-} from '@langchain/core/prompts';
-import { ChatOpenAI } from '@langchain/openai';
-import { StringOutputParser } from '@langchain/core/dist/output_parsers';
-
-const template = `Print out the following paragraph exactly:
-
-Generating random paragraphs can be an excellent way for writers to get their creative flow going at the beginning of the day. The writer has no idea what topic the random paragraph will be about when it appears. This forces the writer to use creativity to complete one of three common writing challenges. The writer can use the paragraph as the first one of a short story and build upon it. A second option is to use the random paragraph somewhere in a short story they create. The third option is to have the random paragraph be the ending paragraph in a short story. No matter which of these challenges is undertaken, the writer is forced to use creativity to incorporate the paragraph into their writing.
-
-A random paragraph can also be an excellent way for a writer to tackle writers' block. Writing block can often happen due to being stuck with a current project that the writer is trying to complete. By inserting a completely random paragraph from which to begin, it can take down some of the issues that may have been causing the writers' block in the first place.
-
-Now here's a random word: {randomWord}`;
+import { createRandomTexts } from '../process/executeRandomTexts';
 
 export const getRandomTextTool = () => {
   return new DynamicStructuredTool({
-    name: 'Random Text',
-    description: 'Returns a random text',
+    name: 'randomText',
+    description: 'generate random via an LLM',
     schema: z.object({ randomWord: z.string() }),
-    func: async ({ randomWord }) => {
-      const messages = [HumanMessagePromptTemplate.fromTemplate(template)];
-      const prompt = ChatPromptTemplate.fromMessages(messages);
-      const llm = new ChatOpenAI({
-        streaming: true,
-        modelName: 'gpt-3.5-turbo',
-        temperature: 0.4,
-        maxTokens: 1000,
-        openAIApiKey: process.env.OPENAI_API_KEY,
+    func: async ({ randomWord }, callbackManager) => {
+      await createRandomTexts({
+        randomWord,
+        count: 1,
+        callbackManager,
+      });
+      await createRandomTexts({
+        randomWord,
+        count: 2,
+        callbackManager,
+      });
+      await createRandomTexts({
+        randomWord,
+        count: 3,
+        callbackManager,
+      });
+      await createRandomTexts({
+        randomWord,
+        count: 4,
+        callbackManager,
+      });
+      const result = await createRandomTexts({
+        randomWord,
+        count: 5,
+        callbackManager,
       });
 
-      const chain = prompt
-        .pipe(llm.withConfig({ runName: 'Create Random Text' }))
-        .pipe(new StringOutputParser())
-        .withConfig({
-          runName: 'Sequence - Create Random Text',
-        });
-
-      const output = await chain.invoke({ randomWord });
-      return output;
+      return result;
     },
   });
 };
