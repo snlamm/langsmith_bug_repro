@@ -1,17 +1,4 @@
-import {
-  DynamicStructuredTool,
-  DynamicTool,
-  Tool,
-} from '@langchain/core/tools';
-import { z } from 'zod';
-import {
-  ChatPromptTemplate,
-  HumanMessagePromptTemplate,
-} from '@langchain/core/prompts';
-import { ChatOpenAI } from '@langchain/openai';
-import { StringOutputParser } from '@langchain/core/dist/output_parsers';
-
-const log = 'Print out some log';
+import { DynamicTool } from '@langchain/core/tools';
 
 const getRandomOtherTool = () => {
   return new DynamicTool({

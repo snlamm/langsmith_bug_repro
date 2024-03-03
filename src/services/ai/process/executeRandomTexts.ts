@@ -2,7 +2,7 @@ import {
   CallbackManager,
   CallbackManagerForToolRun,
 } from '@langchain/core/callbacks/manager';
-import { StringOutputParser } from '@langchain/core/dist/output_parsers';
+import { StringOutputParser } from '@langchain/core/output_parsers';
 import {
   ChatPromptTemplate,
   HumanMessagePromptTemplate,
@@ -21,10 +21,12 @@ export const createRandomTexts = async ({
   randomWord,
   count,
   callbackManager,
+  shortId,
 }: {
   randomWord: string;
   count: number;
   callbackManager: CallbackManagerForToolRun;
+  shortId: string;
 }) => {
   const messages = [HumanMessagePromptTemplate.fromTemplate(template)];
   const prompt = ChatPromptTemplate.fromMessages(messages);
@@ -32,8 +34,9 @@ export const createRandomTexts = async ({
     streaming: true,
     modelName: 'gpt-3.5-turbo',
     temperature: 0.4,
-    maxTokens: 1000,
+    maxTokens: 500,
     openAIApiKey: process.env.OPENAI_API_KEY,
+    tags: [shortId],
   });
 
   const chain = prompt
@@ -42,8 +45,9 @@ export const createRandomTexts = async ({
     .withConfig({
       runName: `(${count}) Sequence - Create Random Text`,
       callbacks: [callbackManager],
+      tags: [shortId],
     });
 
-  const output = await chain.invoke({ randomWord });
+  const output = await chain.invoke({ randomWord, tags: [shortId] });
   return output;
 };
