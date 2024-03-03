@@ -1,73 +1,44 @@
-import { initializeAgentExecutorWithOptions } from 'langchain/agents';
-import { getRandomTextTool } from './tools/randomTextTool.js';
 import { ChatOpenAI } from '@langchain/openai';
 import {
   CallbackManager,
   traceAsGroup,
 } from '@langchain/core/callbacks/manager';
 import { Client } from 'langsmith';
-import { awaitAllCallbacks } from '@langchain/core/callbacks/promises';
+import { LangChainTracer } from '@langchain/core/tracers/tracer_langchain';
 import { makeId } from './utils/makeId.js';
 
-const AGENT_PROMPT = `You are a test agent, who is to follow the instructions so we can stress test our LLM logging.
-
-Your goal is too call the randomText tool over and over again until instructed to finish. You should call it with a random word structured as  {{ "randomWord": "<some word>"}}`;
-
-export const runAgent = async ({
-  count,
-  callbackManager,
-  shortId,
-}: {
-  count: number;
-  callbackManager: CallbackManager;
-  shortId: string;
-}) => {
-  console.log('start agent!');
-
-  const tools = [getRandomTextTool({ shortId })];
-
+const getChatLLM = ({ shortId }: { shortId: string }) => {
   const chatLLM = new ChatOpenAI({
-    streaming: true,
     modelName: 'gpt-3.5-turbo',
     temperature: 0.4,
     maxTokens: 500,
     openAIApiKey: process.env.OPENAI_API_KEY,
     tags: [shortId],
-    callbacks: [callbackManager],
   });
-  console.log('openai initiated!');
 
-  //   const executor = await initializeAgentExecutorWithOptions(tools, chatLLM, {
-  //     agentType: 'structured-chat-zero-shot-react-description',
-  //     agentArgs: {
-  //       prefix: AGENT_PROMPT,
-  //     },
-  //     maxIterations: 1,
-  //     tags: [shortId],
-  //     metadata: {},
-  //     callbacks: [callbackManager],
-  //   });
+  return chatLLM;
+};
 
-  //   console.log('calling executor!');
-
-  //   await executor.call(
-  //     {
-  //       input: '',
-  //       runName: `(${count}) Agent Executor`,
-  //     },
-  //     { callbacks: [callbackManager], tags: [shortId] },
-  //   );
-
-  //   console.log('start test!');
+export const runPromptInGroup = async ({
+  callbackManager,
+  shortId,
+}: {
+  callbackManager: CallbackManager;
+  shortId: string;
+}) => {
+  const chatLLM = getChatLLM({ shortId });
 
   const result = await chatLLM.invoke("Say the word 'test'", {
     runName: 'Log Test',
     tags: [shortId],
+    callbacks: [callbackManager],
   });
-  console.log('results!', result);
+
+  // the result logs correctly, but the log always shows as pending
+  console.log('result!', result);
 };
 
-export const runAgentsInParallel = async () => {
+export const runAllPrompts = async () => {
   try {
     const shortId = `testShortId:${makeId(5)}`;
 
@@ -75,11 +46,21 @@ export const runAgentsInParallel = async () => {
 
     const client = new Client({
       apiKey: process.env.LANGCHAIN_API_KEY,
-      callerOptions: {
-        maxRetries: 3,
-      },
     });
-    console.log('client initiated!');
+
+    const chatLLM = getChatLLM({ shortId });
+
+    // this log works!
+    await chatLLM.invoke("Say the word 'hello'", {
+      runName: 'Log Test',
+      tags: [shortId],
+      callbacks: [
+        new LangChainTracer({
+          client,
+          projectName: process.env.LANGSMITH_PROJECT_NAME,
+        }),
+      ],
+    });
 
     await traceAsGroup(
       {
@@ -88,22 +69,14 @@ export const runAgentsInParallel = async () => {
         projectName: process.env.LANGSMITH_PROJECT_NAME,
       },
       async (callbackManager) => {
-        await Promise.all(
-          //   [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((count) =>
-          [1].map((count) =>
-            runAgent({
-              count,
-              callbackManager,
-              shortId,
-            }),
-          ),
-        );
+        runPromptInGroup({
+          callbackManager,
+          shortId,
+        });
       },
     );
   } catch (error) {
     console.log('error!');
     console.log(error);
-  } finally {
-    await awaitAllCallbacks();
   }
 };

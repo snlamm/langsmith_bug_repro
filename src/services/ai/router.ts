@@ -1,5 +1,5 @@
 import express from 'express';
-import { runAgentsInParallel } from './runAgent.js';
+import { runAllPrompts } from './runAgent.js';
 
 /**
  * Router for /ai
@@ -8,7 +8,7 @@ export const getRouter = (): express.Router => {
   const router = express.Router();
 
   router.get('/trigger', async (req, res) => {
-    await runAgentsInParallel();
+    await runAllPrompts();
 
     res.sendStatus(204);
   });
