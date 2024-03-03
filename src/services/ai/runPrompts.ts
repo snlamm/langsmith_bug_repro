@@ -1,8 +1,5 @@
 import { ChatOpenAI } from '@langchain/openai';
-import {
-  CallbackManager,
-  traceAsGroup,
-} from '@langchain/core/callbacks/manager';
+import { traceAsGroup } from '@langchain/core/callbacks/manager';
 import { Client } from 'langsmith';
 import { LangChainTracer } from '@langchain/core/tracers/tracer_langchain';
 import { makeId } from './utils/makeId.js';
