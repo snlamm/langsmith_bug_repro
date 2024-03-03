@@ -19,25 +19,6 @@ const getChatLLM = ({ shortId }: { shortId: string }) => {
   return chatLLM;
 };
 
-export const runPromptInGroup = async ({
-  callbackManager,
-  shortId,
-}: {
-  callbackManager: CallbackManager;
-  shortId: string;
-}) => {
-  const chatLLM = getChatLLM({ shortId });
-
-  const result = await chatLLM.invoke("Say the word 'test'", {
-    runName: 'Log Test',
-    tags: [shortId],
-    callbacks: [callbackManager],
-  });
-
-  // the result logs correctly, but the log always shows as pending
-  console.log('result!', result);
-};
-
 export const runAllPrompts = async () => {
   try {
     const shortId = `testShortId:${makeId(5)}`;
@@ -69,10 +50,16 @@ export const runAllPrompts = async () => {
         projectName: process.env.LANGSMITH_PROJECT_NAME,
       },
       async (callbackManager) => {
-        runPromptInGroup({
-          callbackManager,
-          shortId,
+        const chatLLM = getChatLLM({ shortId });
+
+        const result = await chatLLM.invoke("Say the word 'test'", {
+          runName: 'Log Test',
+          tags: [shortId],
+          callbacks: [callbackManager],
         });
+
+        // the result logs correctly, but the log always shows as pending
+        console.log('result!', result);
       },
     );
   } catch (error) {
