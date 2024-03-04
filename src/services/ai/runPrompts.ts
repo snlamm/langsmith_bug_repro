@@ -41,6 +41,7 @@ export const runAllPrompts = async () => {
 
     console.log(`starting! ShortId ${shortId}`);
 
+    // SUCCEEDS------------
     const result = await createLog({
       name: 'Succeeds',
       shortId,
@@ -52,6 +53,7 @@ export const runAllPrompts = async () => {
       ],
     });
     console.log('first result!', result);
+    // ------------
 
     await traceAsGroup(
       {
@@ -60,6 +62,7 @@ export const runAllPrompts = async () => {
         projectName: process.env.LANGSMITH_PROJECT_NAME,
       },
       async (callbackManager) => {
+        // FAIL ------------
         const chatLLM = new ChatOpenAI({
           modelName: 'gpt-3.5-turbo',
           temperature: 0.4,
@@ -72,17 +75,18 @@ export const runAllPrompts = async () => {
           tags: [shortId],
           callbacks: [callbackManager],
         });
-
-        // the result console.logs correctly, but the langsmith log always shows as pending
+        // the result console.logs, but the langsmith log always shows as PENDING
         console.log('second result!', result2);
+        // ------------
 
+        // SUCCEEDS------------
         const result3 = await createLog({
           name: 'Also succeeds',
           shortId,
           callbacks: callbackManager,
         });
-
         console.log('third result!', result3);
+        // ------------
       },
     );
   } catch (error) {
