@@ -28,6 +28,7 @@ export const runAllPrompts = async () => {
     const result = await chatLLM.invoke("Say the word 'test'", {
       runName: 'Log Test - Succeeds',
       tags: [shortId],
+      // must pass in a callback handler *with* an array, otherwise an error is shown
       callbacks: [
         new LangChainTracer({
           client: getLangsmithClient(),
@@ -49,10 +50,10 @@ export const runAllPrompts = async () => {
         const result2 = await chatLLM.invoke("Say the word 'test'", {
           runName: 'Log Test - Hangs',
           tags: [shortId],
-          // issue is placing the callback manager in an array
+          // passes a callback manager in an array. No error is shown/thrown, but the langsmith log will always show as PENDING
           callbacks: [callbackManager],
         });
-        // the result console.logs, but the langsmith log always shows as PENDING
+        // the result console.logs correctly
         console.log('second result!', result2);
         // ------------
 
@@ -60,6 +61,7 @@ export const runAllPrompts = async () => {
         const result3 = await chatLLM.invoke("Say the word 'test'", {
           runName: 'Log Test - Succeeds',
           tags: [shortId],
+          // to succeed, must pass in a callback manager *without* an array
           callbacks: callbackManager,
         });
         console.log('third result!', result3);
