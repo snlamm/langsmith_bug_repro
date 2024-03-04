@@ -1,10 +1,28 @@
 import { ChatOpenAI } from '@langchain/openai';
-import { traceAsGroup } from '@langchain/core/callbacks/manager';
+import {
+  CallbackManager,
+  Callbacks,
+  traceAsGroup,
+} from '@langchain/core/callbacks/manager';
 import { Client } from 'langsmith';
 import { LangChainTracer } from '@langchain/core/tracers/tracer_langchain';
 import { makeId } from './utils/makeId.js';
 
-const getChatLLM = ({ shortId }: { shortId: string }) => {
+const getLangsmithClient = () => {
+  return new Client({
+    apiKey: process.env.LANGCHAIN_API_KEY,
+  });
+};
+
+const createLog = async ({
+  name,
+  shortId,
+  callbacks,
+}: {
+  name: string;
+  shortId: string;
+  callbacks: Callbacks;
+}) => {
   const chatLLM = new ChatOpenAI({
     modelName: 'gpt-3.5-turbo',
     temperature: 0.4,
@@ -12,8 +30,13 @@ const getChatLLM = ({ shortId }: { shortId: string }) => {
     openAIApiKey: process.env.OPENAI_API_KEY,
     tags: [shortId],
   });
+  const result = await chatLLM.invoke("Say the word 'test'", {
+    runName: `Log Test - ${name}`,
+    tags: [shortId],
+    callbacks,
+  });
 
-  return chatLLM;
+  return result;
 };
 
 export const runAllPrompts = async () => {
@@ -22,41 +45,32 @@ export const runAllPrompts = async () => {
 
     console.log(`starting! ShortId ${shortId}`);
 
-    const client = new Client({
-      apiKey: process.env.LANGCHAIN_API_KEY,
-    });
-
-    const chatLLM = getChatLLM({ shortId });
-
-    // this log works!
-    await chatLLM.invoke("Say the word 'hello'", {
-      runName: 'Log Test',
-      tags: [shortId],
+    const result = await createLog({
+      name: 'Succeeds',
+      shortId,
       callbacks: [
         new LangChainTracer({
-          client,
+          client: getLangsmithClient(),
           projectName: process.env.LANGSMITH_PROJECT_NAME,
         }),
       ],
     });
+    console.log('first result!', result);
 
     await traceAsGroup(
       {
-        name: 'Trace Group',
-        client,
+        name: `Trace Group ${Date.now()}`,
+        client: getLangsmithClient(),
         projectName: process.env.LANGSMITH_PROJECT_NAME,
       },
       async (callbackManager) => {
-        const chatLLM = getChatLLM({ shortId });
-
-        const result = await chatLLM.invoke("Say the word 'test'", {
-          runName: 'Log Test',
-          tags: [shortId],
-          callbacks: [callbackManager],
+        const result2 = await createLog({
+          name: 'Hangs',
+          shortId,
+          callbacks: callbackManager,
         });
 
-        // the result logs correctly, but the log always shows as pending
-        console.log('result!', result);
+        console.log('second result!', result2);
       },
     );
   } catch (error) {
