@@ -8,18 +8,6 @@ import { Client } from 'langsmith';
 import { LangChainTracer } from '@langchain/core/tracers/tracer_langchain';
 import { makeId } from './utils/makeId.js';
 
-const getChatLLM = ({ shortId }: { shortId: string }) => {
-  const chatLLM = new ChatOpenAI({
-    modelName: 'gpt-3.5-turbo',
-    temperature: 0.4,
-    maxTokens: 500,
-    openAIApiKey: process.env.OPENAI_API_KEY,
-    tags: [shortId],
-  });
-
-  return chatLLM;
-};
-
 const getLangsmithClient = () => {
   return new Client({
     apiKey: process.env.LANGCHAIN_API_KEY,
@@ -76,16 +64,29 @@ export const runAllPrompts = async () => {
         projectName: process.env.LANGSMITH_PROJECT_NAME,
       },
       async (callbackManager) => {
-        const chatLLM = getChatLLM({ shortId });
-
-        const result = await chatLLM.invoke("Say the word 'test'", {
-          runName: 'Log Test',
+        const chatLLM = new ChatOpenAI({
+          modelName: 'gpt-3.5-turbo',
+          temperature: 0.4,
+          maxTokens: 500,
+          openAIApiKey: process.env.OPENAI_API_KEY,
+          tags: [shortId],
+        });
+        const result2 = await chatLLM.invoke("Say the word 'test'", {
+          runName: 'Log Test - Hangs',
           tags: [shortId],
           callbacks: [callbackManager],
         });
 
-        // the result logs correctly, but the log always shows as pending
-        console.log('result!', result);
+        // the result console.logs correctly, but the langsmith log always shows as pending
+        console.log('second result!', result2);
+
+        const result3 = await createLog({
+          name: 'Also succeeds',
+          shortId,
+          callbacks: callbackManager,
+        });
+
+        console.log('third result!', result3);
       },
     );
   } catch (error) {
