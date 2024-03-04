@@ -20,18 +20,21 @@ You'll notice the following:
 
 There are 3 api calls to openai:
 
-1. the first one succeeds (logs results to console _and_ langsmith)
+1. the first one succeeds (logs results to console _and_ langsmith), using a tracer callback handler in an array
 
 Then in the trace group:
 
-2. the second one stays in pending forever in langsmith (logs results to console, remains in _pending_ forever in langsmith)
+2. the second one stays in pending forever in langsmith (logs results to console, remains in _pending_ forever in langsmith), using callback _manager_ in an array
 
-3. the third one succeeds (logs results to console _and_ langsmith)
+3. the third one succeeds (logs results to console _and_ langsmith), using callback manger _not_ in an array
+
+There are no type errors.
 
 This replicates 100% of the time (out of ~20 or so attempts, some of them separated >12 hours apart).
 
-### The Difference Between Calls 2 and 3
+### The Difference Between the Calls
 
-Both calls are inside of a trace group (i.e. a chain). The only difference is that the 2nd call happens in a separate function, and the 3rd one does not. Other than that, they're the identical code.
+The issue here is that when the callback _manager_ is put in an array, it silently fails with no explanation to the end-user by logging that the run started but silently failing to update it.
+In addition, there are no type errors.
 
-The hanging still occurs even if the third call is removed, it's just there to illustrate the bug.
+Fix: either create a clear warning/error when a user attempts to pass a manager in an array, or changing the callback logic so it can handle a callback manager in an array correctly.

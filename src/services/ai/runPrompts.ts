@@ -3,6 +3,10 @@ import { Callbacks, traceAsGroup } from '@langchain/core/callbacks/manager';
 import { Client } from 'langsmith';
 import { LangChainTracer } from '@langchain/core/tracers/tracer_langchain';
 import { makeId } from './utils/makeId.js';
+import {
+  BaseCallbackHandler,
+  CallbackHandlerMethods,
+} from '@langchain/core/dist/callbacks/base.js';
 
 const getLangsmithClient = () => {
   return new Client({
@@ -41,10 +45,18 @@ export const runAllPrompts = async () => {
 
     console.log(`starting! ShortId ${shortId}`);
 
+    const chatLLM = new ChatOpenAI({
+      modelName: 'gpt-3.5-turbo',
+      temperature: 0.4,
+      maxTokens: 500,
+      openAIApiKey: process.env.OPENAI_API_KEY,
+      tags: [shortId],
+    });
+
     // SUCCEEDS------------
-    const result = await createLog({
-      name: 'Succeeds',
-      shortId,
+    const result = await chatLLM.invoke("Say the word 'test'", {
+      runName: 'Log Test - Succeeds',
+      tags: [shortId],
       callbacks: [
         new LangChainTracer({
           client: getLangsmithClient(),
@@ -63,13 +75,6 @@ export const runAllPrompts = async () => {
       },
       async (callbackManager) => {
         // FAIL ------------
-        const chatLLM = new ChatOpenAI({
-          modelName: 'gpt-3.5-turbo',
-          temperature: 0.4,
-          maxTokens: 500,
-          openAIApiKey: process.env.OPENAI_API_KEY,
-          tags: [shortId],
-        });
         const result2 = await chatLLM.invoke("Say the word 'test'", {
           runName: 'Log Test - Hangs',
           tags: [shortId],
@@ -81,9 +86,9 @@ export const runAllPrompts = async () => {
         // ------------
 
         // SUCCEEDS------------
-        const result3 = await createLog({
-          name: 'Also succeeds',
-          shortId,
+        const result3 = await chatLLM.invoke("Say the word 'test'", {
+          runName: 'Log Test - Succeeds',
+          tags: [shortId],
           callbacks: callbackManager,
         });
         console.log('third result!', result3);
