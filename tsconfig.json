@@ -1,21 +1,22 @@
 {
   "compilerOptions": {
-    "module": "ESNext",
-    "esModuleInterop": true,
-    "target": "ESNext",
-    "lib": ["ESNext"],
-    "noImplicitAny": false,
+    "target": "esnext",
+    "module": "esnext",
+    "strict": true,
+    "jsx": "preserve",
+    "importHelpers": true,
     "moduleResolution": "node",
-    "sourceMap": true,
-    "outDir": "dist",
-    "baseUrl": ".",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "baseUrl": ".", // Set the base directory for non-relative module names
     "paths": {
-      "*": ["node_modules/*"]
-    }
+      "@models/*": ["src/models/*"], // Resolve imports like '@models/example' to 'src/models/example'
+      "@utils/*": ["src/utils/*"] // Resolve imports like '@utils/example' to 'src/utils/example'
+    },
+    "outDir": "./dist", // Specify the output directory for the compiled JavaScript files
+    "declaration": true,
+    "declarationMap": true
   },
-  "ts-node": {
-    "swc": true,
-    "esm": true
-  },
-  "include": ["src/**/*"]
+  "include": ["src/**/*"], // Include all files in the src directory
+  "exclude": ["node_modules", "dist"] // Exclude node_modules and dist directories
 }
